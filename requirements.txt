@@ -1,10 +1,12 @@
 Flask
+Flask-SQLAlchemy
+Flask-Migrate
 transformers
 torch
 torchvision
 Pillow
 requests
 gunicorn
-sqlalchemy
 psycopg2-binary
-flask-sqlalchemy
+google-generativeai
+paho-mqtt
