@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from PIL import Image
 import io
 import google.generativeai as genai
+import logging
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 #port = int(os.environ.get("PORT", 10000))
@@ -105,8 +107,8 @@ def chat():
     db.session.commit()
     return jsonify({"reply": reply})
 
-with app.app_context():
-    db.create_all()
+#with app.app_context():
+ #   db.create_all()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
