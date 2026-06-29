@@ -49,6 +49,10 @@ class ChatBot:
 bot = ChatBot()
 
 # --- ROUTES ---
+@app.route('/tasks', methods=['GET'])
+def get_tasks():
+    # Test için basit bir yanıt
+    return jsonify([{"id": 1, "name": "Water the Plants"}])
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -81,4 +85,5 @@ with app.app_context():
     db.create_all() # Bu komut tablolarını veritabanında otomatik oluşturur.
 
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
