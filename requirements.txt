@@ -1,0 +1,9 @@
+Flask
+transformers
+torch
+Pillow
+requests
+gunicorn
+sqlalchemy
+psycopg2-binary
+flask-sqlalchemy
