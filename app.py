@@ -16,10 +16,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 db = SQLAlchemy(app)
 
 # Modeli ve işlemciyi global yükle
-print("Model yükleniyor...")
-processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
-model = AutoModelForImageClassification.from_pretrained(MODEL_NAME)
-print("Model başarıyla yüklendi!")
+model = None
+processor = None
+
+def load_model():
+    global model, processor
+    if model is None:
+        print("Model yükleniyor...")
+        processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
+        model = AutoModelForImageClassification.from_pretrained(MODEL_NAME)
+        print("Model yüklendi!")
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,28 +58,22 @@ def chat():
 
 @app.route('/upload', methods=['POST'])
 def upload_plant():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-    
+    load_model()
+
     file = request.files['file']
     image = Image.open(io.BytesIO(file.read())).convert("RGB")
-    
-    # Görüntüyü modele hazırla
+
     inputs = processor(images=image, return_tensors="pt")
-    
-    # Tahmin yap
+
     with torch.no_grad():
         outputs = model(**inputs)
-        logits = outputs.logits
-        predicted_class_idx = logits.argmax(-1).item()
-    
-    # İsimleri config.json'dan otomatik alabiliriz (label2id/id2label)
-    # Burada senin verdiğin id2label listesi üzerinden eşleşme yapıyoruz
+        predicted_class_idx = outputs.logits.argmax(-1).item()
+
     predicted_label = model.config.id2label[predicted_class_idx]
-    
+
     return jsonify({
         "plant_name": predicted_label,
-        "care_tips": f"Plant name {predicted_label}. You can ask the chatbot for detailed maintenance information."
+        "care_tips": f"You can ask the chatbot for detailed maintenance information."
     })
 
 # bir kerelik çalışsa yeterli:
