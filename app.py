@@ -4,9 +4,9 @@ from transformers import pipeline
 import torch
 from transformers import AutoModelForImageClassification, AutoImageProcessor
 from PIL import Image
-from transformers import AutoImageProcessor, ViTModel
 import io
 import requests
+import os
 
 app = Flask(__name__)
 # Modelin yolu
