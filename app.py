@@ -5,30 +5,18 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from PIL import Image
 import io
-import torch
 import google.generativeai as genai
-from transformers import AutoModelForImageClassification, AutoImageProcessor
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+#port = int(os.environ.get("PORT", 10000))
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 db = SQLAlchemy(app)
-migrate = Migrate(app, db) # Migrasyonları yönetir
+migrate = Migrate(app, db)
 
-# --- AI Modelleri (Uygulama başladığında 1 kez yüklenir) ---
-MODEL_NAME = "dima806/house-plant-image-detection"
-
+# Global model değişkenleri (Başlangıçta None)
 model = None
 processor = None
 
-def get_model():
-    global model, processor
-    if model is None:
-        print("Model ilk kez yükleniyor...")
-        # Modeli burada yüklüyoruz
-        processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
-        model = AutoModelForImageClassification.from_pretrained(MODEL_NAME)
-        print("Model başarıyla yüklendi!")
-    return model, processor
 # API yapılandırması
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model_gemini = genai.GenerativeModel('gemini-1.5-flash')
@@ -37,7 +25,7 @@ model_gemini = genai.GenerativeModel('gemini-1.5-flash')
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    date = db.Column(db.String(10)) # "YYYY-MM-DD" formatında saklayacağız
+    date = db.Column(db.String(10))
     done = db.Column(db.Boolean, default=False)
 
 class ChatHistory(db.Model):
@@ -66,18 +54,25 @@ def delete_task(id):
 
 @app.route('/upload', methods=['POST'])
 def upload_plant():
-    # Modeli burada çağırıyoruz
-    current_model, current_processor = get_model()
+    global model, processor
+    # Sadece ihtiyaç anında import et (RAM tasarrufu)
+    import torch
+    from transformers import AutoModelForImageClassification, AutoImageProcessor
+    
+    if model is None:
+        print("First time model import (RAM)...")
+        processor = AutoImageProcessor.from_pretrained("dima806/house-plant-image-detection")
+        model = AutoModelForImageClassification.from_pretrained("dima806/house-plant-image-detection")
     
     if 'file' not in request.files:
-        return jsonify({"error": "File cannot be found."}), 400
+        return jsonify({"error": "File not found"}), 400
     
     file = request.files['file']
     image = Image.open(io.BytesIO(file.read())).convert("RGB")
-    inputs = current_processor(images=image, return_tensors="pt")
+    inputs = processor(images=image, return_tensors="pt")
 
     with torch.no_grad():
-        outputs = current_model(**inputs)
+        outputs = model(**inputs)
         predicted_class_idx = outputs.logits.argmax(-1).item()
 
     predicted_label = model.config.id2label[predicted_class_idx]
