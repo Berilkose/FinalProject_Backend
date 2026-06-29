@@ -1,7 +1,7 @@
 Flask
 transformers
-torch==2.12.1
-torchvision==0.17.2
+torch
+torchvision
 Pillow
 requests
 gunicorn
